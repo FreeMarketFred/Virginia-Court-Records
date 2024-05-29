@@ -1,5 +1,5 @@
 
-# Court Records Scraper
+# Virginia Court Records Scraper
 
 ## Description
 This Node.js script automates the process of scraping court records from the Virginia Courts website. It allows users to specify a date and a court, then fetches and saves the available court records for that date and court in a JSON file.
