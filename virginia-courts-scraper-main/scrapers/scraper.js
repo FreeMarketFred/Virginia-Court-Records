@@ -18,13 +18,15 @@ const startRotatingIndicator = () => {
     let isRunning = true;
     let direction = true;
     const interval = setInterval(() => {
-        process.stdout.write(`\r<<<<<<<< ${direction ? '/' : '\\'} ${uiUpdate} Total Cases: ${totalCases} Courts Left ${courtCount - courtFinishedCount} ${!direction ? '/' : '\\'} >>>>>>>`);
+        process.stdout.write('\r\x1b[K');
+        process.stdout.write(`<<<<<<<< ${direction ? '/' : '\\'} ${uiUpdate} Total Cases: ${totalCases} Courts Left To Search: ${courtCount - courtFinishedCount} ${!direction ? '/' : '\\'} >>>>>>>`);
         direction = !direction;
     }, 100)
 
     return () => {
         clearInterval(interval);
         isRunning = false;
+        process.stdout.write('\r\x1b[K');
         process.stdout.write('\n');
     }
 }
