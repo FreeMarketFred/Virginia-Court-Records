@@ -2,6 +2,31 @@ const fs = require('fs');
 const puppeteer = require('puppeteer');
 const { typeDelay, logFile } = require('../utils/index');
 const detailsList = [];
+let caseDetailsOut = '';
+let totalCases = 0;
+let remainingCases = 0;
+let casesSearched = 0;
+
+/**
+ * Initiates a rotating indicator in the console to visually represent the process activity.
+ * @returns {Function} A function that, when called, will stop the rotating indicator.
+ */
+const startRotatingIndicator = () => {
+    let isRunning = true;
+    let direction = true;
+    const interval = setInterval(() => {
+        process.stdout.write('\r\x1b[K');
+        process.stdout.write(`<<<<<<<< ${direction ? '/' : '\\'} Searching for: ${caseDetailsOut} Cases Remaining: ${remainingCases} ${!direction ? '/' : '\\'} >>>>>>>`);
+        direction = !direction;
+    }, 100)
+
+    return () => {
+        clearInterval(interval);
+        isRunning = false;
+        process.stdout.write('\r\x1b[K');
+        process.stdout.write('\n');
+    }
+}
 
 /**
  * Scrapes detailed information for a list of cases.
@@ -9,21 +34,26 @@ const detailsList = [];
  * @returns {Promise<Array>} - The list of detailed case information.
  */
 const detailScraper = async (mainList) => {
+    totalCases = mainList.length;
+    const stopIndicator = startRotatingIndicator();
     const lookupCodeDetails = fs.readFileSync('./staticList/getLookupCodeDetails.json', 'utf8');
     const jsonCodeDetails = JSON.parse(lookupCodeDetails);
-    const browser = await puppeteer.launch({ headless: true });
+    const browser = await puppeteer.launch({ headless: "new" });
     console.log("Total Cases: ", mainList.length);
-    const splitArrays = await splitArrayIntoChunks(mainList, 25);
+    const splitArrays = await splitArrayIntoChunks(mainList, 8);
 
     await Promise.all(splitArrays.map(async (arr) => {
         for (let i = 0; i < arr.length; i++) {
             const courtDetail = jsonCodeDetails.filter(codeDetail => codeDetail.fipsCode4 === arr[i].qualifiedFips);
             const caseNumber = arr[i].formattedCaseNumber;
-            console.log(`\n${arr[i].name}, ${courtDetail[0].courtName}, ${caseNumber}, ${i + 1} of ${arr.length}`);
+            caseDetailsOut = `${arr[i].name}, ${courtDetail[0].courtName}, ${caseNumber}`;
+            casesSearched++;
+            remainingCases = totalCases - casesSearched;
             await scraper(browser, courtDetail[0].courtName, caseNumber, arr[i]);
         }
     }))
     await browser.close();
+    stopIndicator();
     return detailsList;
 }
 
@@ -71,7 +101,7 @@ const scraper = async (browser, court, caseNumber, originalRecord) => {
                 const json_res = await response.json();
                 const data = json_res.context.entity.payload;
                 if(data != null){
-                    originalRecord.courtName = courtName;
+                    originalRecord.courtName = courtName.toUpperCase();
                     detailsList.push({summary: originalRecord, details: data});
                 }
             }
