@@ -29,7 +29,7 @@ function matchesFilter(item, filters) {
  * @param {string} configPath - The path to the configuration file.
  * @returns {Promise<Array<Object>>} A promise that resolves with the filtered items.
  */
-async function userFilter(items, configPath = './config.json') {
+async function userFilter(items, configPath = './utils/config.json') {
     try {
         const { codeSections: filters } = await readConfig(configPath);
         return items.filter(item => matchesFilter(item, filters));
